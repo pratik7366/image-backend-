@@ -115,15 +115,16 @@ app.post('/api/login', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await user.comparePassword(password); // ✅ Use method from model
     if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
 
-    res.json({ token: uuidv4() });
+    res.json({ token: uuidv4() }); // Optional: add user ID/email to the token or response
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ message: 'Login failed' });
   }
 });
+
 
 // Start server
 app.listen(PORT, () => {
