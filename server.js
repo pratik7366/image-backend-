@@ -6,6 +6,7 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 const User = require('./models/User'); // ✅ Imported user model
@@ -26,11 +27,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // ✅ Connect to MongoDB Atlas
 mongoose.connect(
-  process.env.MONGO_URI,
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }
+  process.env.MONGO_URI
 ).then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
@@ -98,7 +95,8 @@ app.post('/api/signup', async (req, res) => {
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'User already exists' });
 
-    const newUser = new User({ email, password });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ email, password: hashedPassword });
     await newUser.save();
 
     res.status(201).json({ token: uuidv4() });
@@ -114,8 +112,11 @@ app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const user = await User.findOne({ email, password });
+    const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     res.json({ token: uuidv4() });
   } catch (err) {
