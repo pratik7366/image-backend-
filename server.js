@@ -107,23 +107,31 @@ app.post('/api/signup', async (req, res) => {
 });
 
 // Login Route
+// Login Route
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password required' });
+    }
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    const valid = await user.comparePassword(password); // ✅ Use method from model
-    if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    res.json({ token: uuidv4() }); // Optional: add user ID/email to the token or response
+    res.json({ token: uuidv4() });
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ message: 'Login failed' });
   }
 });
+
 
 
 // Start server
